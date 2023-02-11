@@ -91,16 +91,12 @@ CPUの設定はx64を指定する必要がある.
 **推論時の注意点**  
 今回はC#の画像の読み込みにはSystem.Drawing.Commonを用いている.  
 ただしこれはWindowsサポートのみであるため、画像の読込みにはImageSharpやSkiaSharpを利用するほうが望ましいと思われる.  
-画像を取得できるのであればいずれのライブラリでもよくByteStreamとして取得できるのであれば基本的には何を使っても問題はないように思う.  
-ただし入力テンソルに合わせるためにリサイズする際にライブラリなどによって挙動の差異があると思われる.  
-それ起因で一部の推論結果が変わってしまうことがある様子である.  
+ByteStreamとして取得できるのであれば、基本的には何を使っても問題はないように思う.  
+ただし入力テンソルに合わせるためにリサイズする際には注意が必要.  
+ライブラリなどによって挙動の差異があると思われるため、それ起因で推論結果が変わってしまうことがある.  
 
 ## 引用
-* ONNX Runtime
-[ONNX Runtime](https://onnxruntime.ai/)  
-
-* NETRON (model viewer)
- [NETRON](https://github.com/lutzroeder/netron)
-  
- * Dataset  
-[dog-breed-identification](https://www.kaggle.com/c/dog-breed-identification)  
+* [ONNX Runtime](https://onnxruntime.ai/)  
+* [NVIDIA - cuDNN Documentation](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html)
+* [NETRON](https://github.com/lutzroeder/netron)  
+* [dog-breed-identification](https://www.kaggle.com/c/dog-breed-identification) : Dataset  
