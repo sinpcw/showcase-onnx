@@ -10,14 +10,13 @@ from tqdm.auto import tqdm
 class CFG:
     image_size = 224
     image_dir = 'data/dog-breed-identification/train'
-    # 
-    trans_dir = 'data/dog-breed-identification/trans'
 
 class Inference:
     def __init__(self, onnx_path):
+        # CPUのみの場合:
+        # self.session = ort.InferenceSession('model.onnx', providers=[ 'CPUExecutionProvider' ])
         # GPUを利用する場合:
         self.session = ort.InferenceSession('model.onnx', providers=[ 'CUDAExecutionProvider', 'CPUExecutionProvider' ])
-        # self.session = ort.InferenceSession('model.onnx', providers=[ 'CPUExecutionProvider' ])
 
     def __call__(self, x):
         ret = self.session.run([ 'output' ], { 'input1' : x })
@@ -52,7 +51,7 @@ def main():
     preprocess = Preprocess()
     result_ids = [ ]
     result_cls = [ ]
-    for i, file in enumerate(tqdm(files)):
+    for _, file in enumerate(tqdm(files)):
         x = loadimg(file)
         x = preprocess(x)
         y = infer(x)
