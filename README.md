@@ -4,7 +4,8 @@ ONNX Runtimeを用いて推論環境を構築するためのサンプル環境.
 
 ## 概要
 デプロイやUnityなどと併せて使用したい場合にPythonとC#の間でモデルやり取りが必要なケースがある.  
-このときONNX Runtimeを用いるのが可搬性や実現性が高いと考え、この雛型があると便利であることから用意しておく.  
+このときONNX Runtimeを用いるのが可搬性や実現性が高いと考えており、  
+雛型があると便利であることから用意しておく.  
   
 **実現すること**
 * PyTorchにてモデルを作成
@@ -23,7 +24,8 @@ ONNXモデルの確認は[NETRON](https://github.com/lutzroeder/netron)などの
 <img src="images/app_1.png" width="720px" />  
   
 ONNXモデルのinput1, outputなどはこちらで定めている名前である.  
-ONNXモデルを利用する上ではこの名前をもとに入力を与えるため、I/F名は重要なため、わかりやすい名前にしておくことを推奨する.  
+ONNXモデルを利用する上ではこの名前をもとに入力を与えるため、  
+I/F名にはわかりやすい名前をつけておくことを推奨する.  
   
 ## Pythonによる推論環境構築
 [ONNX Runtime - Install ONNX Runtime](https://onnxruntime.ai/docs/install/#python-installs)に従うと下記コマンドでインストールが可能.  
@@ -43,7 +45,7 @@ GPUExecutionProviderを利用する場合にはCUDAのバージョンには注�
 対応するバージョンは CUDA 11.6 / cuDNN 8.5.0.96 (Windows) である.
 
 **補足: CUDAバージョン違い時の挙動**  
-現行の環境にインストールしてあるCUDAはCUDA 12.0 + cuDNN 8.8.0.121であったため、
+現行の環境にインストールしてあるCUDAはCUDA 12.0 + cuDNN 8.8.0.121であったため、  
 バージョンがあっていないが、CUDAExecutionProviderで実行するとGPUによる推論が動いた.  
 ただし、無用なエラーを避けるため可能な限り指定versionを使用することを推奨する.  
 またcuDNNをインストールしていない場合はエラーとなったのでインストールは必須と思われれる.  
@@ -63,8 +65,6 @@ python -c "import onnxruntime; print(onnxruntime.__version__)"
 infer.py
 ```
   
-<img src="images/cmd_2.png" width="720px" />  
-  
 推論時の挙動確認としてタスクマネージャやnvidia-smiを監視するとGPUで正しく動作しているようである.  
 <img src="images/cmd_3.png" width="720px" />  
 <img src="images/mgr_1.png" width="720px" />  
@@ -82,15 +82,17 @@ CPUの設定はx64を指定する必要がある.
 .Gpuに関しては先のPythonと同じくGPUを用いる場合に指定することがあるならこちらを入れる.    
 検証環境にてNuGetで取得したONNX Runtimeは 1.13.1 と先ほどと同様であったが、  
 こちらはPythonの時と異なり厳密に指定されたバージョンを使用しないとエラーとなる.  
-対応するバージョンは CUDA 11.6 / cuDNN 8.5.0.96 (Windows) を NVIDIAからダウンロードしてインストールとパスを通すこと.  
+対応するバージョンは CUDA 11.6 / cuDNN 8.5.0.96 (Windows) である.  
+これらをNVIDIAからダウンロードしてインストールとパスを通すこと.  
 また、Windowsではcudnnをインストールしたディレクトリに zlibwapi.dll を合わせて配置する必要がある.  
-これは[NVIDIAのリファレンス](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html#install-zlib-windows)に記載がある.  
+この件についても[NVIDIAのリファレンス](https://docs.nvidia.com/deeplearning/cudnn/install-guide/index.html#install-zlib-windows)に記載がある.  
 書かれている通り、Chromeでリンクをクリックしてダウンロードしようとすると、  
 危険なファイルとして出てしまうため、右クリックからリンク先のファイルを保存を選択する.  
 
 **推論時の注意点**  
 今回はC#の画像の読み込みにはSystem.Drawing.Commonを用いている.  
-ただしこれはWindowsサポートのみであるため、画像の読込みにはImageSharpやSkiaSharpを利用するほうが望ましいと思われる.  
+ただしこれはWindowsサポートのみであるようだ.  
+そのため、画像の読込みにはImageSharpやSkiaSharpを利用するほうが望ましいと思われる.  
 ByteStreamとして取得できるのであれば、基本的には何を使っても問題はないように思う.  
 ただし入力テンソルに合わせるためにリサイズする際には注意が必要.  
 ライブラリなどによって挙動の差異があると思われるため、それ起因で推論結果が変わってしまうことがある.  
