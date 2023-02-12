@@ -1,13 +1,38 @@
 ﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Configuration;
 using Microsoft.ML.OnnxRuntime;
 using Microsoft.ML.OnnxRuntime.Tensors;
 
-const int ImageSize = 224;
-const string RootDir = "../../../../../../../python/";
-const string DataDir = "../../../../../../../python/data/dog-breed-identification/train/";
 
+static void PrintConfigure(string mode)
+{
+    Console.WriteLine("{0} Inference", mode);
+    Console.WriteLine("  rootdir : {0}", ReadParameterAsStr("rootdir", "./"));
+    Console.WriteLine("  datadir : {0}", ReadParameterAsStr("datadir", "./"));
+    Console.WriteLine("  imgsize : {0}", ReadParameterAsInt("imgsize", 0));
+}
+
+static string ReadParameterAsStr(string key, string defaultValue = "")
+{
+    var s = ConfigurationManager.AppSettings[key];
+    if (s == null)
+    {
+        return defaultValue;
+    }
+    return s;
+}
+
+static int ReadParameterAsInt(string key, int defaultValue = 0)
+{
+    var s = ConfigurationManager.AppSettings[key];
+    if (s == null)
+    {
+        return defaultValue;
+    }
+    return int.Parse(s);
+}
 static Bitmap ImageResize(Image image, int width, int height)
 {
     var rect = new Rectangle(0, 0, width, height);
@@ -21,11 +46,13 @@ static Bitmap ImageResize(Image image, int width, int height)
     return dest;
 }
 
+
 static Tensor<float> GetImageTensor(string filepath)
 {
-    var tensor = new DenseTensor<float>(new[] { 1, 3, ImageSize, ImageSize });
+    var imageSize = ReadParameterAsInt("imgsize");
+    var tensor = new DenseTensor<float>(new[] { 1, 3, imageSize, imageSize });
     using (var bitmap = new Bitmap(filepath))
-    using (var buffer = ImageResize(bitmap, ImageSize, ImageSize))
+    using (var buffer = ImageResize(bitmap, imageSize, imageSize))
     {
         var lockbits = buffer.LockBits(new Rectangle(0, 0, buffer.Width, buffer.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
         try
@@ -37,12 +64,12 @@ static Tensor<float> GetImageTensor(string filepath)
                 for (int x = 0; x < buffer.Width; x++)
                 {
                     int i = y * lockbits.Stride + x * 4;
-                    var b = (float)stream[i + 0];
-                    var g = (float)stream[i + 1];
-                    var r = (float)stream[i + 2];
-                    tensor[0, 0, y, x] = (r - 255.0f * 0.485f) / (255.0f * 0.229f);
-                    tensor[0, 1, y, x] = (g - 255.0f * 0.456f) / (255.0f * 0.224f);
-                    tensor[0, 2, y, x] = (b - 255.0f * 0.406f) / (255.0f * 0.225f);
+                    var b = (double)stream[i + 0];
+                    var g = (double)stream[i + 1];
+                    var r = (double)stream[i + 2];
+                    tensor[0, 0, y, x] = (float)((r - 255.0 * 0.485) / (255.0 * 0.229));
+                    tensor[0, 1, y, x] = (float)((g - 255.0 * 0.456) / (255.0 * 0.224));
+                    tensor[0, 2, y, x] = (float)((b - 255.0 * 0.406) / (255.0 * 0.225));
                 }
             }
         }
@@ -56,13 +83,14 @@ static Tensor<float> GetImageTensor(string filepath)
 
 static void CpuInference()
 {
+    PrintConfigure("CPU");
     var data = LoadData();
     var pred = new Dictionary<string, int>();
-    using (var session = new InferenceSession(Path.Combine(RootDir, "model.onnx")))
+    using (var session = new InferenceSession(Path.Combine(ReadParameterAsStr("rootdir", "./"), "model.onnx")))
     {
         for (int i = 0; i < data.Count; i++)
         {
-            var file = Path.Combine(DataDir, data[i].id) + ".jpg";
+            var file = Path.Combine(ReadParameterAsStr("datadir", "./"), data[i].id) + ".jpg";
             var input_image = GetImageTensor(file);
             var inputTensor = new List<NamedOnnxValue>()
             {
@@ -82,14 +110,15 @@ static void CpuInference()
 
 static void GpuInference()
 {
+    PrintConfigure("GPU");
     var data = LoadData();
     var pred = new Dictionary<string, int>();
     using (var options = SessionOptions.MakeSessionOptionWithCudaProvider(deviceId: 0))
-    using (var session = new InferenceSession(Path.Combine(RootDir, "model.onnx"), options))
+    using (var session = new InferenceSession(Path.Combine(ReadParameterAsStr("rootdir", "./"), "model.onnx"), options))
     {
         for (int i = 0; i < data.Count; i++)
         {
-            var file = Path.Combine(DataDir, data[i].id) + ".jpg";
+            var file = Path.Combine(ReadParameterAsStr("datadir", "./"), data[i].id) + ".jpg";
             var input_image = GetImageTensor(file);
             var inputTensor = new List<NamedOnnxValue>()
             {
@@ -123,7 +152,7 @@ static void OutputResult(List<(string id, string breed, int class_id, int predic
 static List<(string id, string breed, int class_id, int predict_id)> LoadData()
 {
     string[] buffer;
-    using (var reader = new StreamReader(Path.Combine(RootDir, "sample_valid.csv")))
+    using (var reader = new StreamReader(Path.Combine(ReadParameterAsStr("rootdir", "./"), "sample_valid.csv")))
     {
         buffer = reader.ReadToEnd().Replace("\r\n", "\n").Split("\n");
     }
@@ -141,8 +170,13 @@ static List<(string id, string breed, int class_id, int predict_id)> LoadData()
     return result;
 }
 
-// on CPU Inference
-//CpuInference();
-
-// on GPU Inference
-GpuInference();
+if (ReadParameterAsStr("runmode", "cpu") == "gpu")
+{
+    // on GPU Inference
+    GpuInference();
+}
+else
+{
+    // on CPU Inference
+    CpuInference();
+}
