@@ -27,6 +27,7 @@ class CFG:
     train_csv = 'sample_train.csv'
     valid_csv = 'sample_valid.csv'
     optimizer = 'Adam'
+    modelname = 'resnet34'
 
 class SAM(torch.optim.Optimizer):
     """
@@ -222,7 +223,8 @@ def get_timestamp():
 def main():
     train_loader = get_train_loader(pd.read_csv(CFG.train_csv))
     valid_loader = get_valid_loader(pd.read_csv(CFG.valid_csv))
-    model = timm.create_model('tf_efficientnet_b0', num_classes=CFG.num_classes, pretrained=True).to(CFG.device)
+    model = timm.create_model(CFG.modelname, num_classes=CFG.num_classes, pretrained=True).to(CFG.device)
+    # model = timm.create_model('tf_efficientnet_b0', num_classes=CFG.num_classes, pretrained=True).to(CFG.device)
     if CFG.device != 'cpu' and CFG.amp_use:
         model.forward = autocast()(model.forward)
     optim, scheduler = get_optimizer_and_scheduler(model)
@@ -242,7 +244,7 @@ def main():
 
 def convert_to_onnx(pth):
     # fp16モデルをそのまま出力するとONNXで取り扱う際にエラーとなるため再度生成しておく
-    model = timm.create_model('tf_efficientnet_b0', num_classes=CFG.num_classes, pretrained=False)
+    model = timm.create_model(CFG.modelname, num_classes=CFG.num_classes, pretrained=False)
     model.load_state_dict(torch.load(pth, map_location='cpu'), strict=True)
     model = model.to(CFG.device)
     # ONNXに入力するテンソルを作成
@@ -265,5 +267,4 @@ def convert_to_onnx(pth):
 
 """ エントリポイント """
 if __name__ == "__main__":
-    # main()
-    
+    main()

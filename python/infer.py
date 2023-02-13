@@ -37,7 +37,7 @@ class Preprocess:
 def loadimg(file):
     img = cv2.imread(file)
     out = cv2.resize(img, (224, 224))
-    cv2.imwrite(os.path.join(CFG.trans_dir, os.path.basename(file)), out)
+    cv2.imwrite(os.path.join(CFG.image_dir, os.path.basename(file)), out)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     return img
 
