@@ -7,6 +7,7 @@ import timm
 import albumentations as A
 import dadaptation
 import torch
+import torchvision
 from torch.cuda.amp import autocast
 from torch.cuda.amp.grad_scaler import GradScaler
 from torch.utils.data.dataset import Dataset
@@ -223,7 +224,10 @@ def get_timestamp():
 def main():
     train_loader = get_train_loader(pd.read_csv(CFG.train_csv))
     valid_loader = get_valid_loader(pd.read_csv(CFG.valid_csv))
-    model = timm.create_model(CFG.modelname, num_classes=CFG.num_classes, pretrained=True).to(CFG.device)
+    model = torchvision.models.resnet34(pretrained=True)
+    model.fc = torch.nn.Linear(model.fc.in_features, 120)
+    model = model.to(CFG.device)
+    # model = timm.create_model(CFG.modelname, num_classes=CFG.num_classes, pretrained=True).to(CFG.device)
     # model = timm.create_model('tf_efficientnet_b0', num_classes=CFG.num_classes, pretrained=True).to(CFG.device)
     if CFG.device != 'cpu' and CFG.amp_use:
         model.forward = autocast()(model.forward)
@@ -244,7 +248,9 @@ def main():
 
 def convert_to_onnx(pth):
     # fp16モデルをそのまま出力するとONNXで取り扱う際にエラーとなるため再度生成しておく
-    model = timm.create_model(CFG.modelname, num_classes=CFG.num_classes, pretrained=False)
+    model = torchvision.models.resnet34(pretrained=True)
+    model.fc = torch.nn.Linear(model.fc.in_features, 120)
+    # model = timm.create_model(CFG.modelname, num_classes=CFG.num_classes, pretrained=False)
     model.load_state_dict(torch.load(pth, map_location='cpu'), strict=True)
     model = model.to(CFG.device)
     # ONNXに入力するテンソルを作成
@@ -263,7 +269,7 @@ def convert_to_onnx(pth):
     # y_names = [ 'output' ]
     # ONNXモデルの生成
     # NOTE: verbose=Trueにしているとかなりの量のメッセージがでるため, Falseにしておくほうがよいかもしれない.
-    torch.onnx.export(model, x, 'model.onnx', verbose=True, input_names=x_names, output_names=y_names)
+    torch.onnx.export(model, x, 'model.onnx', verbose=False, input_names=x_names, output_names=y_names)
 
 """ エントリポイント """
 if __name__ == "__main__":
